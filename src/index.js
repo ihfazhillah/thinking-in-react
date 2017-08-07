@@ -1,6 +1,47 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
+import { createStore, combineReducers } from 'redux';
+import { connect, Provider } from 'react-redux';
+
+const TOGGLE_STOCKED_ONLY = 'TOGGLE_STOCKED_ONLY'
+const CHANGE_SEARCH_VALUE = 'CHANGE_SEARCH_VALUE'
+
+const toggleStockedOnly = (bool) => ({
+  type: TOGGLE_STOCKED_ONLY,
+  bool
+});
+
+const changeSearchValue = (searchValue) => ({
+  type: CHANGE_SEARCH_VALUE,
+  searchValue
+})
+
+/*
+ * Reducers
+ */
+
+const searchValueReducer = (state='', action) => {
+  switch(action.type){
+    case CHANGE_SEARCH_VALUE:
+      return {searchValue: action.searchValue}
+    default:
+      return state
+  }
+}
+
+const toggleStockedOnlyReducer = (state=false, action) => {
+  switch(action.type){
+    case TOGGLE_STOCKED_ONLY:
+      return {isStocked: action.bool}
+    default:
+      return state
+  }
+}
+
+const reducers = combineReducers({
+  searchValue: searchValueReducer, toggleStockedOnly: toggleStockedOnlyReducer }); 
+const store = createStore(reducers);
 
 
 let data = [
@@ -52,7 +93,8 @@ class ProductTable extends React.Component {
       products = _.filter(products, {stocked: true})
     }
 
-    products = _.filter(products, (row) => (row.name.indexOf(this.props.searchValue) !== -1))
+    products = _.filter(products, (row) => (row.name.indexOf(this.props.value) !== -1))
+
 
     _.forEach(products, (row, index) => {
       if (row.category !== lastCategory) {
@@ -61,6 +103,7 @@ class ProductTable extends React.Component {
         rows.push(<ProductRow key={index} row={row}/>);
         lastCategory = row.category
     });
+
 
     if(products.length > 0){
       return (<table>
@@ -120,21 +163,19 @@ class FilterableProductTable extends React.Component {
    */
   constructor(props){
     super(props)
-    this.state = {
-      searchValue : '',
-      isStocked : false
-    }
 
     this.handleSearchValue = this.handleSearchValue.bind(this);
     this.handleIsStocked = this.handleIsStocked.bind(this);
   }
 
+
   handleSearchValue(searchValue){
-    this.setState({searchValue: searchValue})
+    store.dispatch(changeSearchValue(searchValue));
   }
 
   handleIsStocked(bool){
-    this.setState({isStocked: bool})
+    //this.setState({isStocked: bool})
+    store.dispatch(toggleStockedOnly(bool))
   }
 
   render(){
@@ -142,19 +183,35 @@ class FilterableProductTable extends React.Component {
     return (
       <div>
         <SearchBar
-          value={this.state.searchValue}
+          value={this.props.value}
           onChangeTextInput={this.handleSearchValue}
-          isStock={this.state.isStocked}
+          isStock={this.props.isStocked}
           onChangeCheckbox={this.handleIsStocked}
         />
         <ProductTable 
           data={products}
-          isStock={this.state.isStocked}
-          searchValue={this.state.searchValue}
+          isStock={this.props.isStocked}
+          value={this.props.value}
         />
       </div>
     )
   }
 }
 
-ReactDOM.render(<FilterableProductTable data={data}/>, document.getElementById("root"));
+FilterableProductTable.defaultProps = {
+    value: '',
+    isStocked: false
+  }
+
+const mapStateToProps = (store) => {
+  return {
+  value : store.searchValue.searchValue,
+  isStocked: store.toggleStockedOnly.isStocked
+}};
+
+FilterableProductTable = connect(mapStateToProps)(FilterableProductTable)
+
+ReactDOM.render(<Provider store={store}>
+  <FilterableProductTable data={data}/>
+</Provider>,
+  document.getElementById("root"));
