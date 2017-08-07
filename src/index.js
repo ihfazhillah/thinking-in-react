@@ -161,32 +161,15 @@ class FilterableProductTable extends React.Component {
   /*
    * Container of our app
    */
-  constructor(props){
-    super(props)
-
-    this.handleSearchValue = this.handleSearchValue.bind(this);
-    this.handleIsStocked = this.handleIsStocked.bind(this);
-  }
-
-
-  handleSearchValue(searchValue){
-    store.dispatch(changeSearchValue(searchValue));
-  }
-
-  handleIsStocked(bool){
-    //this.setState({isStocked: bool})
-    store.dispatch(toggleStockedOnly(bool))
-  }
-
   render(){
     let products = this.props.data;
     return (
       <div>
         <SearchBar
           value={this.props.value}
-          onChangeTextInput={this.handleSearchValue}
+          onChangeTextInput={this.props.handleSearchValue}
           isStock={this.props.isStocked}
-          onChangeCheckbox={this.handleIsStocked}
+          onChangeCheckbox={this.props.handleIsStocked}
         />
         <ProductTable 
           data={products}
@@ -209,7 +192,18 @@ const mapStateToProps = (store) => {
   isStocked: store.toggleStockedOnly.isStocked
 }};
 
-FilterableProductTable = connect(mapStateToProps)(FilterableProductTable)
+const mapDispatchToProps = (dispatch, ownProps) => ({
+  handleSearchValue: (value) => (
+    dispatch(changeSearchValue(value))
+  ),
+
+  handleIsStocked: (bool) => (
+    dispatch(toggleStockedOnly(bool))
+  ),
+
+});
+
+FilterableProductTable = connect(mapStateToProps, mapDispatchToProps)(FilterableProductTable)
 
 ReactDOM.render(<Provider store={store}>
   <FilterableProductTable data={data}/>
